@@ -1,0 +1,22 @@
+{
+    "name": "webgriffe/magento-installer",
+    "description": "Composer's script handler to install Magento after a 'composer install/update'",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Webgriffe®",
+            "email": "info@webgriffe.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+
+    },
+    "require-dev": {
+        "composer/composer": "*"
+    },
+    "autoload": {
+        "psr-0": { "Webgriffe\\MagentoInstaller": "" }
+    },
+    "target-dir": "Webgriffe/MagentoInstaller"
+}
