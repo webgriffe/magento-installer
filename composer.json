@@ -10,9 +10,9 @@
     ],
     "minimum-stability": "dev",
     "require": {
-
     },
     "require-dev": {
+        "mikey179/vfsStream": "@stable",
         "composer/composer": "*"
     },
     "autoload": {
