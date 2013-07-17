@@ -27,7 +27,16 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     {
         $event = $this->getEventMock();
 
-        ScriptHandler::installMagento($event);
+        $scriptHandler = $this->getMockClass(
+            'Webgriffe\MagentoInstaller\ScriptHandler',
+            array('doInstall')
+        );
+
+        $scriptHandler::staticExpects($this->once())
+            ->method('doInstall')
+            ->with($this->getExpectedArguments());
+
+        $scriptHandler::installMagento($event);
     }
 
     /**
@@ -71,7 +80,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     private function getPackageMock()
     {
         $extra = array(
-            'install' => 'var/install.yml'
+            'install' => $this->root->getChild('var/install.yml')->url(),
         );
         $package = $this->getMockBuilder('Composer\Package\RootPackageInterface')
             ->disableOriginalConstructor()
@@ -88,21 +97,31 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     private function getInstallYmlContent()
     {
         $content = array();
-        $content[] = 'parameters';
+        $content[] = 'parameters:';
         $content[] = '  locale: it_IT';
         $content[] = '  timezone: Europe/Rome';
-        $content[] = '  currency: EUR';
+        $content[] = '  default_currency: EUR';
         $content[] = '  db_host: localhost';
         $content[] = '  db_name: magento';
         $content[] = '  db_user: magento';
         $content[] = '  db_pass: password';
         $content[] = '  url: http://magento.local/';
-        $content[] = '  admin_first_name: Mario';
-        $content[] = '  admin_last_name: Rossi';
+        $content[] = '  admin_firstname: Mario';
+        $content[] = '  admin_lastname: Rossi';
         $content[] = '  admin_email: mario.rossi@foo.it';
         $content[] = '  admin_username: admin';
         $content[] = '  admin_password: password';
 
         return implode(PHP_EOL, $content);
+    }
+
+    private function getExpectedArguments()
+    {
+        return '--license_agreement_accepted "1" --skip_url_validation "1" --use_rewrites "1" '.
+            '--use_secure "0" --use_secure_admin "0" --locale "it_IT" --timezone "Europe/Rome" ' .
+            '--default_currency "EUR" --db_host "localhost" --db_name "magento" --db_user "magento" ' .
+            '--db_pass "password" --url "http://magento.local/" --admin_firstname "Mario" --admin_lastname "Rossi" ' .
+            '--admin_email "mario.rossi@foo.it" --admin_username "admin" --admin_password "password" '.
+            '--secure_base_url "http://magento.local/"';
     }
 }
