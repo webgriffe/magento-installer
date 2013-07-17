@@ -12,6 +12,6 @@ class ScriptHandler
 {
     public static function installMagento(Event $event)
     {
-
+        $event->getComposer()->getPackage()->getExtra();
     }
 }
