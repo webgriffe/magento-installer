@@ -15,21 +15,22 @@ class ScriptHandler
     public static function installMagento(Event $event)
     {
         $options = $event->getComposer()->getPackage()->getExtra();
-        $installArguments = static::computeInstallArguments($options['install']);
-        static::executeCommand($installArguments);
+        $command = static::getInstallCommand($options['install']);
+        static::executeCommand($command);
     }
 
-    protected static function executeCommand($arguments)
+    protected static function executeCommand($command)
     {
-        $command = sprintf('php -f install.php -- %s', $arguments);
-        $process = new Process($command, null, null, null, 300);
+        $process = new Process(null);
+        $process->setCommandLine($command);
+        $process->setTimeout(300);
         $process->run(function ($type, $buffer) { echo $buffer; });
         if (!$process->isSuccessful()) {
-            throw new \RuntimeException(sprintf('An error occurred while executing \'%s\'.'));
+            throw new \RuntimeException(sprintf('An error occurred while executing \'%s\'.', $command));
         }
     }
 
-    private static function computeInstallArguments($installParametersFile)
+    private static function getInstallCommand($installParametersFile)
     {
         $yml = Yaml::parse($installParametersFile);
         $parameters = self::getInstallParameters($yml['parameters']);
@@ -38,7 +39,8 @@ class ScriptHandler
             $arguments[] = sprintf('--%s "%s"', $key, $value);
         }
 
-        return implode(' ', $arguments);
+        $arguments = implode(' ', $arguments);
+        return sprintf('php -f install.php -- %s', $arguments);
     }
 
     private static function getInstallParameters(array $parameters)

@@ -8,6 +8,7 @@ namespace Webgriffe\MagentoInstaller\Tests\Unit;
 
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use Mockery as m;
 use Webgriffe\MagentoInstaller\ScriptHandler;
 
 class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
@@ -26,17 +27,19 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     public function testInstallMagento()
     {
         $event = $this->getEventMock();
+        $this->createProcessOverloadMock(true);
 
-        $executeMethod = 'executeCommand';
-        $scriptHandler = $this->getMockClass(
-            'Webgriffe\MagentoInstaller\ScriptHandler',
-            array($executeMethod)
-        );
+        $scriptHandler = new ScriptHandler();
+        $scriptHandler::installMagento($event);
+    }
 
-        $scriptHandler::staticExpects($this->once())
-            ->method($executeMethod)
-            ->with($this->getExpectedArguments());
+    public function testInstallFailed()
+    {
+        $event = $this->getEventMock();
+        $this->createProcessOverloadMock(false);
+        $this->setExpectedException('\RuntimeException');
 
+        $scriptHandler = new ScriptHandler();
         $scriptHandler::installMagento($event);
     }
 
@@ -118,11 +121,25 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     private function getExpectedArguments()
     {
-        return '--license_agreement_accepted "1" --skip_url_validation "1" --use_rewrites "1" '.
+        return 'php -f install.php -- --license_agreement_accepted "1" --skip_url_validation "1" --use_rewrites "1" '.
             '--use_secure "0" --use_secure_admin "0" --locale "it_IT" --timezone "Europe/Rome" ' .
             '--default_currency "EUR" --db_host "localhost" --db_name "magento" --db_user "magento" ' .
             '--db_pass "password" --url "http://magento.local/" --admin_firstname "Mario" --admin_lastname "Rossi" ' .
             '--admin_email "mario.rossi@foo.it" --admin_username "admin" --admin_password "password" '.
             '--secure_base_url "http://magento.local/"';
+    }
+
+    protected function tearDown()
+    {
+        m::close();
+    }
+
+    private function createProcessOverloadMock($isSuccessful)
+    {
+        $process = m::mock('overload:Symfony\Component\Process\Process');
+        $process->shouldReceive('setCommandLine')->times(1)->with($this->getExpectedArguments());
+        $process->shouldReceive('setTimeout')->times(1)->with(300);
+        $process->shouldReceive('run')->times(1);
+        $process->shouldReceive('isSuccessful')->times(1)->andReturn($isSuccessful);
     }
 }
