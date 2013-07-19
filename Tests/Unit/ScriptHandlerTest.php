@@ -27,13 +27,14 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     {
         $event = $this->getEventMock();
 
+        $executeMethod = 'executeCommand';
         $scriptHandler = $this->getMockClass(
             'Webgriffe\MagentoInstaller\ScriptHandler',
-            array('doInstall')
+            array($executeMethod)
         );
 
         $scriptHandler::staticExpects($this->once())
-            ->method('doInstall')
+            ->method($executeMethod)
             ->with($this->getExpectedArguments());
 
         $scriptHandler::installMagento($event);

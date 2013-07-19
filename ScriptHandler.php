@@ -15,10 +15,10 @@ class ScriptHandler
     {
         $options = $event->getComposer()->getPackage()->getExtra();
         $installArguments = static::computeInstallArguments($options['install']);
-        static::doInstall($installArguments);
+        static::executeCommand($installArguments);
     }
 
-    protected static function doInstall($arguments)
+    protected static function executeCommand($arguments)
     {
         return $arguments;
     }
