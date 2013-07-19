@@ -13,7 +13,8 @@
     },
     "require-dev": {
         "mikey179/vfsStream": "@stable",
-        "composer/composer": "*"
+        "composer/composer": "*",
+        "mockery/mockery": "@stable"
     },
     "autoload": {
         "psr-0": { "Webgriffe\\MagentoInstaller": "" }
