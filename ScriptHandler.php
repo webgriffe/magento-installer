@@ -7,6 +7,7 @@ namespace Webgriffe\MagentoInstaller;
 
 
 use Composer\Script\Event;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
 class ScriptHandler
@@ -20,7 +21,12 @@ class ScriptHandler
 
     protected static function executeCommand($arguments)
     {
-        return $arguments;
+        $command = sprintf('php -f install.php -- %s', $arguments);
+        $process = new Process($command, null, null, null, 300);
+        $process->run(function ($type, $buffer) { echo $buffer; });
+        if (!$process->isSuccessful()) {
+            throw new \RuntimeException(sprintf('An error occurred while executing \'%s\'.'));
+        }
     }
 
     private static function computeInstallArguments($installParametersFile)
