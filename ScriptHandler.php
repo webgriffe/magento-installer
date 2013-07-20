@@ -12,17 +12,25 @@ use Symfony\Component\Yaml\Yaml;
 
 class ScriptHandler
 {
+    const DATABASE_CHARACTER_SET = 'utf8';
+    const DATABASE_COLLATE = 'utf8_general_ci';
+
     public static function installMagento(Event $event)
     {
         $options = $event->getComposer()->getPackage()->getExtra();
-        $installParametersFile = $options['install'];
+        $parametersFile = $options['install'];
 
-        if (!file_exists($installParametersFile)) {
-            throw new FileNotFoundException($installParametersFile);
+        if (!file_exists($parametersFile)) {
+            throw new FileNotFoundException($parametersFile);
         }
 
-        $command = static::getInstallCommand($installParametersFile);
-        static::executeCommand($command);
+        $yml = Yaml::parse($parametersFile);
+        $parameters = self::getInstallParameters($yml['parameters']);
+
+        self::createMysqlDatabase($parameters);
+
+        $command = static::getInstallCommand($parameters);
+        self::executeCommand($command);
     }
 
     protected static function executeCommand($command)
@@ -36,10 +44,8 @@ class ScriptHandler
         }
     }
 
-    private static function getInstallCommand($installParametersFile)
+    private static function getInstallCommand(array $parameters)
     {
-        $yml = Yaml::parse($installParametersFile);
-        $parameters = self::getInstallParameters($yml['parameters']);
         $arguments = array();
         foreach ($parameters as $key => $value) {
             $arguments[] = sprintf('--%s "%s"', $key, $value);
@@ -64,5 +70,22 @@ class ScriptHandler
                 'secure_base_url' => $parameters['url']
             )
         );
+    }
+
+    /**
+     * @param $parameters
+     */
+    private static function createMysqlDatabase(array $parameters)
+    {
+        $mysqlPdoWrapper = new PdoWrapper();
+        $dsn = sprintf('mysql:host=%s', $parameters['db_host']);
+        $mysqlPdoWrapper->init($dsn, $parameters['db_user'], $parameters['db_pass']);
+        $createDatabaseQuery = sprintf(
+            'CREATE DATABASE %s CHARACTER SET %s COLLATE %s;',
+            $parameters['db_name'],
+            self::DATABASE_CHARACTER_SET,
+            self::DATABASE_COLLATE
+        );
+        $mysqlPdoWrapper->query($createDatabaseQuery);
     }
 }

@@ -28,6 +28,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     {
         $event = $this->getEventMock();
         $this->createProcessOverloadMock(true);
+        $this->createPdoWrapperOverloadMock();
 
         $scriptHandler = new ScriptHandler();
         $scriptHandler::installMagento($event);
@@ -153,5 +154,14 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $process->shouldReceive('setTimeout')->times(1)->with(300);
         $process->shouldReceive('run')->times(1);
         $process->shouldReceive('isSuccessful')->times(1)->andReturn($isSuccessful);
+    }
+
+    private function createPdoWrapperOverloadMock()
+    {
+        $pdo = m::mock('overload:Webgriffe\MagentoInstaller\PdoWrapper');
+        $pdo->shouldReceive('init')->times(1)->with('mysql:host=localhost', 'magento', 'password');
+        $pdo->shouldReceive('query')->times(1)->with(
+            'CREATE DATABASE magento CHARACTER SET utf8 COLLATE utf8_general_ci;'
+        );
     }
 }
