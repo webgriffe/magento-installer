@@ -27,6 +27,10 @@ class ScriptHandler
         $yml = Yaml::parse($parametersFile);
         $parameters = self::getInstallParameters($yml['parameters']);
 
+        if (!self::askConfirmation($event, $parameters)) {
+            return;
+        }
+
         self::createMysqlDatabase($parameters);
 
         $command = static::getInstallCommand($parameters);
@@ -87,5 +91,22 @@ class ScriptHandler
             self::DATABASE_COLLATE
         );
         $mysqlPdoWrapper->query($createDatabaseQuery);
+    }
+
+    /**
+     * @param Event $event
+     * @param $parameters
+     * @return bool
+     */
+    private static function askConfirmation(Event $event, $parameters)
+    {
+        $confirmation = $event->getIO()->askConfirmation(
+            sprintf(
+                'Do you want to create MySQL database \'%s\' and install Magento on it?',
+                $parameters['db_name']
+            ),
+            true
+        );
+        return $confirmation;
     }
 }

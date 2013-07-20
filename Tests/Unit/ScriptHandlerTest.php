@@ -47,7 +47,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     public function testInstallWithoutYamlFile()
     {
         $this->root = vfsStream::setup('root', null, array('var' => array()));
-        $event = $this->getEventMock();
+        $event = $this->getEventMockWithoutIO();
         $this->createProcessOverloadMock(true);
 
         $this->setExpectedException('Webgriffe\MagentoInstaller\FileNotFoundException');
@@ -59,7 +59,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     /**
      * @return \PHPUnit_Framework_MockObject_MockObject
      */
-    private function getEventMock()
+    private function getEventMock($createIoMock = true, $confirmation = true)
     {
         $event = $this->getMockBuilder('Composer\Script\Event')
             ->disableOriginalConstructor()
@@ -69,6 +69,13 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
             ->expects($this->once())
             ->method('getComposer')
             ->will($this->returnValue($this->getComposerMock()));
+
+        if ($createIoMock) {
+            $event
+                ->expects($this->atLeastOnce())
+                ->method('getIO')
+                ->will($this->returnValue($this->getIOMock($confirmation)));
+        }
 
         return $event;
     }
@@ -163,5 +170,22 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $pdo->shouldReceive('query')->times(1)->with(
             'CREATE DATABASE magento CHARACTER SET utf8 COLLATE utf8_general_ci;'
         );
+    }
+
+    private function getIOMock($confirmation)
+    {
+        $io = $this->getMock('\Composer\IO\IOInterface');
+        $io
+            ->expects($this->once())
+            ->method('askConfirmation')
+            ->with('Do you want to create MySQL database \'magento\' and install Magento on it?', true)
+            ->will($this->returnValue($confirmation));
+
+        return $io;
+    }
+
+    private function getEventMockWithoutIO()
+    {
+        return $this->getEventMock(false);
     }
 }
