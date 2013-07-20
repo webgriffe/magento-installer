@@ -15,7 +15,13 @@ class ScriptHandler
     public static function installMagento(Event $event)
     {
         $options = $event->getComposer()->getPackage()->getExtra();
-        $command = static::getInstallCommand($options['install']);
+        $installParametersFile = $options['install'];
+
+        if (!file_exists($installParametersFile)) {
+            throw new FileNotFoundException($installParametersFile);
+        }
+
+        $command = static::getInstallCommand($installParametersFile);
         static::executeCommand($command);
     }
 

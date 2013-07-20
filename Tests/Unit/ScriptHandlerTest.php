@@ -43,6 +43,18 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $scriptHandler::installMagento($event);
     }
 
+    public function testInstallWithoutYamlFile()
+    {
+        $this->root = vfsStream::setup('root', null, array('var' => array()));
+        $event = $this->getEventMock();
+        $this->createProcessOverloadMock(true);
+
+        $this->setExpectedException('Webgriffe\MagentoInstaller\FileNotFoundException');
+
+        $scriptHandler = new ScriptHandler();
+        $scriptHandler::installMagento($event);
+    }
+
     /**
      * @return \PHPUnit_Framework_MockObject_MockObject
      */
@@ -84,7 +96,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     private function getPackageMock()
     {
         $extra = array(
-            'install' => $this->root->getChild('var/install.yml')->url(),
+            'install' => 'vfs://root/var/install.yml',
         );
         $package = $this->getMockBuilder('Composer\Package\RootPackageInterface')
             ->disableOriginalConstructor()
