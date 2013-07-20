@@ -102,7 +102,7 @@ class ScriptHandler
     {
         $confirmation = $event->getIO()->askConfirmation(
             sprintf(
-                'Do you want to create MySQL database \'%s\' and install Magento on it?',
+                'Do you want to create MySQL database \'%s\' and install Magento on it [Y,n]?',
                 $parameters['db_name']
             ),
             true

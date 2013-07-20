@@ -178,7 +178,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $io
             ->expects($this->once())
             ->method('askConfirmation')
-            ->with('Do you want to create MySQL database \'magento\' and install Magento on it?', true)
+            ->with('Do you want to create MySQL database \'magento\' and install Magento on it [Y,n]?', true)
             ->will($this->returnValue($confirmation));
 
         return $io;
