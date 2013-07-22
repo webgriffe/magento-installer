@@ -11,6 +11,12 @@
         </testsuite>
     </testsuites>
 
+    <filter>
+        <blacklist>
+            <directory>./vendor</directory>
+        </blacklist>
+    </filter>
+
     <listeners>
         <listener class="\Mockery\Adapter\Phpunit\TestListener"></listener>
     </listeners>
