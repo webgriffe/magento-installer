@@ -85,7 +85,7 @@ class ScriptHandler
         $dsn = sprintf('mysql:host=%s', $parameters['db_host']);
         $mysqlPdoWrapper->init($dsn, $parameters['db_user'], $parameters['db_pass']);
         $createDatabaseQuery = sprintf(
-            'CREATE DATABASE %s CHARACTER SET %s COLLATE %s;',
+            'CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;',
             $parameters['db_name'],
             self::DATABASE_CHARACTER_SET,
             self::DATABASE_COLLATE

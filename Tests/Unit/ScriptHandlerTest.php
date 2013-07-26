@@ -168,7 +168,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $pdo = m::mock('overload:Webgriffe\MagentoInstaller\PdoWrapper');
         $pdo->shouldReceive('init')->times(1)->with('mysql:host=localhost', 'magento', 'password');
         $pdo->shouldReceive('query')->times(1)->with(
-            'CREATE DATABASE magento CHARACTER SET utf8 COLLATE utf8_general_ci;'
+            'CREATE DATABASE `magento` CHARACTER SET utf8 COLLATE utf8_general_ci;'
         );
     }
 
