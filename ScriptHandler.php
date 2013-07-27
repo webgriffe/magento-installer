@@ -6,6 +6,7 @@
 namespace Webgriffe\MagentoInstaller;
 
 
+use Composer\IO\IOInterface;
 use Composer\Script\Event;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
@@ -14,6 +15,8 @@ class ScriptHandler
 {
     const DATABASE_CHARACTER_SET = 'utf8';
     const DATABASE_COLLATE = 'utf8_general_ci';
+
+    private static $mysqlPdoWrapper;
 
     public static function installMagento(Event $event)
     {
@@ -27,7 +30,20 @@ class ScriptHandler
         $yml = Yaml::parse($parametersFile);
         $parameters = self::getInstallParameters($yml['parameters']);
 
-        if (!self::askConfirmation($event, $parameters)) {
+        self::$mysqlPdoWrapper = new PdoWrapper();
+        $dsn = sprintf('mysql:host=%s', $parameters['db_host']);
+        self::$mysqlPdoWrapper->init($dsn, $parameters['db_user'], $parameters['db_pass']);
+        $query = sprintf("SHOW DATABASES LIKE '%s';", $parameters['db_name']);
+        $pdoStatement = self::$mysqlPdoWrapper->query($query);
+
+        $io = $event->getIO();
+
+        if ($pdoStatement->rowCount() > 0) {
+            $io->write(sprintf('Database \'%s\' already exists, installation skipped.', $parameters['db_name']));
+            return;
+        }
+
+        if (!self::askConfirmation($io, $parameters)) {
             return;
         }
 
@@ -81,26 +97,23 @@ class ScriptHandler
      */
     private static function createMysqlDatabase(array $parameters)
     {
-        $mysqlPdoWrapper = new PdoWrapper();
-        $dsn = sprintf('mysql:host=%s', $parameters['db_host']);
-        $mysqlPdoWrapper->init($dsn, $parameters['db_user'], $parameters['db_pass']);
         $createDatabaseQuery = sprintf(
             'CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;',
             $parameters['db_name'],
             self::DATABASE_CHARACTER_SET,
             self::DATABASE_COLLATE
         );
-        $mysqlPdoWrapper->query($createDatabaseQuery);
+        self::$mysqlPdoWrapper->query($createDatabaseQuery);
     }
 
     /**
-     * @param Event $event
+     * @param IOInterface $io
      * @param $parameters
      * @return bool
      */
-    private static function askConfirmation(Event $event, $parameters)
+    private static function askConfirmation(IOInterface $io, $parameters)
     {
-        $confirmation = $event->getIO()->askConfirmation(
+        $confirmation = $io->askConfirmation(
             sprintf(
                 'Do you want to create MySQL database \'%s\' and install Magento on it [Y,n]?',
                 $parameters['db_name']

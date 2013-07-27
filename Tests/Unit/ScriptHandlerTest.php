@@ -6,6 +6,7 @@
 namespace Webgriffe\MagentoInstaller\Tests\Unit;
 
 
+use Composer\IO\IOInterface;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use Mockery as m;
@@ -26,7 +27,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     public function testInstallMagento()
     {
-        $event = $this->getEventMock();
+        $event = $this->getEventMock($this->getIOMockThatAsksConfirmation(true));
         $this->createProcessOverloadMock(true);
         $this->createPdoWrapperOverloadMock();
 
@@ -36,8 +37,9 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     public function testInstallFailed()
     {
-        $event = $this->getEventMock();
+        $event = $this->getEventMock($this->getIOMockThatAsksConfirmation(true));
         $this->createProcessOverloadMock(false);
+        $this->createPdoWrapperOverloadMock();
         $this->setExpectedException('\RuntimeException');
 
         $scriptHandler = new ScriptHandler();
@@ -56,10 +58,19 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $scriptHandler::installMagento($event);
     }
 
+    public function testInstallShouldSkipBecauseDatabaseAlreadyExists()
+    {
+        $event = $this->getEventMock($this->getIOMockForDatabaseThatAlreadyExists());
+        $this->createPdoWrapperOverloadMock(true);
+
+        $scriptHandler = new ScriptHandler();
+        $scriptHandler::installMagento($event);
+    }
+
     /**
      * @return \PHPUnit_Framework_MockObject_MockObject
      */
-    private function getEventMock($createIoMock = true, $confirmation = true)
+    private function getEventMock(IOInterface $ioMock = null)
     {
         $event = $this->getMockBuilder('Composer\Script\Event')
             ->disableOriginalConstructor()
@@ -70,11 +81,11 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
             ->method('getComposer')
             ->will($this->returnValue($this->getComposerMock()));
 
-        if ($createIoMock) {
+        if ($ioMock) {
             $event
                 ->expects($this->atLeastOnce())
                 ->method('getIO')
-                ->will($this->returnValue($this->getIOMock($confirmation)));
+                ->will($this->returnValue($ioMock));
         }
 
         return $event;
@@ -163,16 +174,33 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $process->shouldReceive('isSuccessful')->times(1)->andReturn($isSuccessful);
     }
 
-    private function createPdoWrapperOverloadMock()
+    private function createPdoWrapperOverloadMock($databaseAlreadyExists = false)
     {
+        $pdoStatement = m::mock('stdClass');
+        $pdoStatement
+            ->shouldReceive('rowCount')
+            ->once()
+            ->withNoArgs()
+            ->andReturn((int)$databaseAlreadyExists);
+
         $pdo = m::mock('overload:Webgriffe\MagentoInstaller\PdoWrapper');
         $pdo->shouldReceive('init')->times(1)->with('mysql:host=localhost', 'magento', 'password');
-        $pdo->shouldReceive('query')->times(1)->with(
-            'CREATE DATABASE `magento` CHARACTER SET utf8 COLLATE utf8_general_ci;'
-        );
+        $pdo
+            ->shouldReceive('query')
+            ->once()
+            ->with('SHOW DATABASES LIKE \'magento\';')
+            ->andReturn($pdoStatement)
+            ->ordered();
+        if (!$databaseAlreadyExists) {
+            $pdo
+                ->shouldReceive('query')
+                ->once()
+                ->with('CREATE DATABASE `magento` CHARACTER SET utf8 COLLATE utf8_general_ci;')
+                ->ordered();
+        }
     }
 
-    private function getIOMock($confirmation)
+    private function getIOMockThatAsksConfirmation($confirmation)
     {
         $io = $this->getMock('\Composer\IO\IOInterface');
         $io
@@ -184,8 +212,19 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         return $io;
     }
 
+    private function getIOMockForDatabaseThatAlreadyExists()
+    {
+        $io = $this->getMock('\Composer\IO\IOInterface');
+        $io
+            ->expects($this->once())
+            ->method('write')
+            ->with('Database \'magento\' already exists, installation skipped.');
+
+        return $io;
+    }
+
     private function getEventMockWithoutIO()
     {
-        return $this->getEventMock(false);
+        return $this->getEventMock();
     }
 }
