@@ -67,6 +67,16 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $scriptHandler::installMagento($event);
     }
 
+    public function testInstallNoInteraction()
+    {
+        $event = $this->getEventMock($this->getIOMockThatAsksConfirmation(false));
+        $this->createProcessOverloadMock(true);
+        $this->createPdoWrapperOverloadMock();
+
+        $scriptHandler = new ScriptHandler();
+        $scriptHandler::installMagento($event);
+    }
+
     /**
      * @return \PHPUnit_Framework_MockObject_MockObject
      */
@@ -200,11 +210,20 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    private function getIOMockThatAsksConfirmation($confirmation)
+    private function getIOMockThatAsksConfirmation($isInteractive, $confirmation = true)
     {
         $io = $this->getMock('\Composer\IO\IOInterface');
-        $io
-            ->expects($this->once())
+
+        $io->expects($this->once())
+            ->method('isInteractive')
+            ->will($this->returnValue($isInteractive));
+
+        if (!$isInteractive) {
+            $io->expects($this->never())->method('askConfirmation');
+            return $io;
+        }
+
+        $io->expects($this->once())
             ->method('askConfirmation')
             ->with('Do you want to create MySQL database \'magento\' and install Magento on it [Y,n]?', true)
             ->will($this->returnValue($confirmation));

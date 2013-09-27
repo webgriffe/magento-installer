@@ -113,6 +113,10 @@ class ScriptHandler
      */
     private static function askConfirmation(IOInterface $io, $parameters)
     {
+        if (!$io->isInteractive()) {
+            return true;
+        }
+
         $confirmation = $io->askConfirmation(
             sprintf(
                 'Do you want to create MySQL database \'%s\' and install Magento on it [Y,n]?',
