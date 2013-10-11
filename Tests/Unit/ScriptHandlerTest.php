@@ -21,7 +21,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $structure = array('var' => array('install.yml' => $this->getInstallYmlContent()));
+        $structure = array('install.yml' => $this->getInstallYmlContent(), 'web' => array());
         $this->root = vfsStream::setup('root', null, $structure);
     }
 
@@ -48,7 +48,7 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     public function testInstallWithoutYamlFile()
     {
-        $this->root = vfsStream::setup('root', null, array('var' => array()));
+        $this->root = vfsStream::setup('root', null, array('web' => array()));
         $event = $this->getEventMockWithoutIO();
         $this->createProcessOverloadMock(true);
 
@@ -72,6 +72,18 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
         $event = $this->getEventMock($this->getIOMockThatAsksConfirmation(false));
         $this->createProcessOverloadMock(true);
         $this->createPdoWrapperOverloadMock();
+
+        $scriptHandler = new ScriptHandler();
+        $scriptHandler::installMagento($event);
+    }
+
+    public function testInstallWithoutMagentoRootDir()
+    {
+        $this->root = vfsStream::setup('root', null, array('install.yml' => $this->getInstallYmlContent()));
+        $event = $this->getEventMockWithoutIO();
+        $this->createProcessOverloadMock(true);
+
+        $this->setExpectedException('Webgriffe\MagentoInstaller\DirectoryNotFoundException');
 
         $scriptHandler = new ScriptHandler();
         $scriptHandler::installMagento($event);
@@ -125,7 +137,8 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
     private function getPackageMock()
     {
         $extra = array(
-            'install' => 'vfs://root/var/install.yml',
+            'install' => 'vfs://root/install.yml',
+            'magento-root-dir' => 'vfs://root/web/',
         );
         $package = $this->getMockBuilder('Composer\Package\RootPackageInterface')
             ->disableOriginalConstructor()
@@ -162,8 +175,8 @@ class ScriptHandlerTest extends \PHPUnit_Framework_TestCase
 
     private function getExpectedArguments()
     {
-        return 'php -f install.php -- --license_agreement_accepted "1" --skip_url_validation "1" --use_rewrites "1" '.
-            '--use_secure "0" --use_secure_admin "0" --locale "it_IT" --timezone "Europe/Rome" ' .
+        return 'php -f vfs://root/web/install.php -- --license_agreement_accepted "1" --skip_url_validation "1" '.
+            '--use_rewrites "1" --use_secure "0" --use_secure_admin "0" --locale "it_IT" --timezone "Europe/Rome" ' .
             '--default_currency "EUR" --db_host "localhost" --db_name "magento" --db_user "magento" ' .
             '--db_pass "password" --url "http://magento.local/" --admin_firstname "Mario" --admin_lastname "Rossi" ' .
             '--admin_email "mario.rossi@foo.it" --admin_username "admin" --admin_password "password" '.

@@ -22,6 +22,11 @@ class ScriptHandler
     {
         $options = $event->getComposer()->getPackage()->getExtra();
         $parametersFile = $options['install'];
+        $magentoRootDir = rtrim($options['magento-root-dir'], '/');
+
+        if (!file_exists($magentoRootDir) || !is_dir($magentoRootDir)) {
+            throw new DirectoryNotFoundException($magentoRootDir);
+        }
 
         if (!file_exists($parametersFile)) {
             throw new FileNotFoundException($parametersFile);
@@ -49,7 +54,7 @@ class ScriptHandler
 
         self::createMysqlDatabase($parameters);
 
-        $command = static::getInstallCommand($parameters);
+        $command = static::getInstallCommand($parameters, $magentoRootDir);
         self::executeCommand($command);
     }
 
@@ -64,7 +69,7 @@ class ScriptHandler
         }
     }
 
-    private static function getInstallCommand(array $parameters)
+    private static function getInstallCommand(array $parameters, $magentoRootDir)
     {
         $arguments = array();
         foreach ($parameters as $key => $value) {
@@ -72,7 +77,7 @@ class ScriptHandler
         }
 
         $arguments = implode(' ', $arguments);
-        return sprintf('php -f install.php -- %s', $arguments);
+        return sprintf('php -f %s/install.php -- %s', $magentoRootDir, $arguments);
     }
 
     private static function getInstallParameters(array $parameters)
