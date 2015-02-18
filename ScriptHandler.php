@@ -32,7 +32,9 @@ class ScriptHandler
             throw new FileNotFoundException($parametersFile);
         }
 
-        $yml = Yaml::parse($parametersFile);
+         //$yml = Yaml::parse($parametersFile);
+        //Passing a filename is deprecated in Symfony 2.2, and will be removed in Symfony 3.0.
+        $yml = Yaml::parse(file_get_contents($parametersFile));
         $parameters = self::getInstallParameters($yml['parameters']);
 
         self::$mysqlPdoWrapper = new PdoWrapper();
